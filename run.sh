@@ -17,75 +17,7 @@ if ! command -v parallel >/dev/null 2>&1; then
 fi
 
 # ============================================================
-# EDA / PPG runs
-# ============================================================
-
-SKIP_EDA_PPG=true   # change to true to skip this block
-
-if [ "$SKIP_EDA_PPG" = "false" ]; then
-
-    NOTEBOOKS=("nb/mlp_eda_ppg.ipynb" "nb/vae_eda_ppg_twostage.ipynb")
-    EXPERIMENTS=("SIMPLE" "SMOTE")
-    TASKS=("AROUSAL" "VALENCE" "STIMULUS-LABEL")
-    MODALITIES=("EDA" "PPG")
-
-    run_job() {
-        NOTEBOOK="$1"
-        EXPERIMENT="$2"
-        MODALITY="$3"
-        TASK="$4"
-
-        TMP_NOTEBOOK=$(mktemp /tmp/papermill_XXXXXX.ipynb)
-
-        echo "START pid=$$ | $NOTEBOOK | $EXPERIMENT | $TASK | $MODALITY"
-
-        CUDA_VISIBLE_DEVICES="" \
-        EXPERIMENT="$EXPERIMENT" TASK="$TASK" MODALITY="$MODALITY" \
-        papermill "$NOTEBOOK" "$TMP_NOTEBOOK" --log-output
-
-        rm -f "$TMP_NOTEBOOK"
-
-        echo "DONE pid=$$ | $NOTEBOOK | $EXPERIMENT | $TASK | $MODALITY"
-    }
-
-    export -f run_job
-
-    parallel --bar --jobs 4 --line-buffer --tag \
-        run_job ::: "${NOTEBOOKS[@]}" ::: "${EXPERIMENTS[@]}" ::: "${MODALITIES[@]}" ::: "${TASKS[@]}"
-
-fi
-
-# ============================================================
-# TEXT runs
-# ============================================================
-
-SKIP_TEXT=true   # change to false to run this block
-if [ "$SKIP_TEXT" = "false" ]; then
-    NOTEBOOKS=("nb/vae_textdata_twostage.ipynb" "nb/text_classifier_baseline.ipynb")
-    EXPERIMENTS=("SIMPLE")
-    TASKS=("AROUSAL" "VALENCE" "STIMULUS-LABEL")
-    MODALITY="TEXT"
-
-    run_text_job() {
-        NOTEBOOK="$1"
-        EXPERIMENT="$2"
-        TASK="$3"
-        MODALITY="$4"
-        TMP_NOTEBOOK=$(mktemp /tmp/papermill_text_XXXXXX.ipynb)
-        echo "Running $NOTEBOOK | $EXPERIMENT | $TASK | $MODALITY"
-        EXPERIMENT="$EXPERIMENT" TASK="$TASK" MODALITY="$MODALITY" \
-        papermill "$NOTEBOOK" "$TMP_NOTEBOOK" --log-output
-        rm -f "$TMP_NOTEBOOK"
-        echo "Finished $NOTEBOOK | $EXPERIMENT | $TASK | $MODALITY"
-    }
-    export -f run_text_job
-    parallel --will-cite --bar --jobs 1 --line-buffer --tag \
-        run_text_job ::: "${NOTEBOOKS[@]}" ::: "${EXPERIMENTS[@]}" ::: "${TASKS[@]}" ::: "$MODALITY"
-fi
-
-
-# ============================================================
-# Common function
+# Multimodal MVAE runs (MoE / PoE fusion)
 # ============================================================
 NOTEBOOKS=("nb/mvae.ipynb")
 EXPERIMENTS=("SIMPLE")
