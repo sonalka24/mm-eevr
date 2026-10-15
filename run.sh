@@ -17,19 +17,19 @@ if ! command -v parallel >/dev/null 2>&1; then
 fi
 
 # ============================================================
-# Multimodal MVAE runs (MoE / PoE fusion)
+# Multimodal runs: MVAE (MoE / PoE fusion) and MLP baseline
+# Each job is "notebook:model"
 # ============================================================
-NOTEBOOKS=("nb/mvae.ipynb")
+JOBS=("nb/mvae.ipynb:MoEVAE" "nb/mvae.ipynb:PoEVAE" "nb/multimodal_mlp.ipynb:MLP")
 EXPERIMENTS=("SIMPLE")
 TASKS=("AROUSAL" "VALENCE" "STIMULUS-LABEL")
-MODEL_NAMES=("MoEVAE" "PoEVAE")
 
 run_multimodal_job() {
-    NOTEBOOK="$1"
+    NOTEBOOK="${1%%:*}"
+    MODEL_NAME="${1##*:}"
     EXPERIMENT="$2"
     TASK="$3"
     MODALITY_NAME="$4"
-    MODEL_NAME="$5"
 
     TMP_NOTEBOOK=$(mktemp /tmp/papermill_multimodal_XXXXXX.ipynb)
 
@@ -49,19 +49,19 @@ SKIP_EDA_PPG=true
 
 if [ "$SKIP_EDA_PPG" = "false" ]; then
     parallel --will-cite --bar --jobs 1 --line-buffer --tag \
-        run_multimodal_job ::: "${NOTEBOOKS[@]}" ::: "${EXPERIMENTS[@]}" ::: "${TASKS[@]}" ::: "EDA+PPG" ::: "${MODEL_NAMES[@]}"
+        run_multimodal_job ::: "${JOBS[@]}" ::: "${EXPERIMENTS[@]}" ::: "${TASKS[@]}" ::: "EDA+PPG"
 fi
 
 SKIP_EDA_TEXT=false
 
 if [ "$SKIP_EDA_TEXT" = "false" ]; then
     parallel --will-cite --bar --jobs 1 --line-buffer --tag \
-        run_multimodal_job ::: "${NOTEBOOKS[@]}" ::: "${EXPERIMENTS[@]}" ::: "${TASKS[@]}" ::: "EDA+TEXT" ::: "${MODEL_NAMES[@]}"
+        run_multimodal_job ::: "${JOBS[@]}" ::: "${EXPERIMENTS[@]}" ::: "${TASKS[@]}" ::: "EDA+TEXT"
 fi
 
 SKIP_PPG_TEXT=false
 
 if [ "$SKIP_PPG_TEXT" = "false" ]; then
     parallel --will-cite --bar --jobs 1 --line-buffer --tag \
-        run_multimodal_job ::: "${NOTEBOOKS[@]}" ::: "${EXPERIMENTS[@]}" ::: "${TASKS[@]}" ::: "PPG+TEXT" ::: "${MODEL_NAMES[@]}"
+        run_multimodal_job ::: "${JOBS[@]}" ::: "${EXPERIMENTS[@]}" ::: "${TASKS[@]}" ::: "PPG+TEXT"
 fi
